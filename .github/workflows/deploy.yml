@@ -1,0 +1,86 @@
+name: Deploy CloudLens
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy-backend:
+    name: Deploy Lambda functions
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Package and deploy costs
+        run: |
+          zip -j costs.zip backend/handlers/costs.py
+          aws lambda update-function-code \
+            --function-name cloudlens-costs \
+            --zip-file fileb://costs.zip
+
+      - name: Package and deploy resources
+        run: |
+          zip -j resources.zip backend/handlers/resources.py
+          aws lambda update-function-code \
+            --function-name cloudlens-resources \
+            --zip-file fileb://resources.zip
+
+      - name: Package and deploy recommendations
+        run: |
+          zip -j recommendations.zip backend/handlers/recommendations.py
+          aws lambda update-function-code \
+            --function-name cloudlens-recommendations \
+            --zip-file fileb://recommendations.zip
+
+      - name: Package and deploy demo-seed
+        run: |
+          zip -j demo_seed.zip backend/handlers/demo_seed.py
+          aws lambda update-function-code \
+            --function-name cloudlens-demo-seed \
+            --zip-file fileb://demo_seed.zip
+
+  deploy-frontend:
+    name: Build and deploy frontend
+    runs-on: ubuntu-latest
+    if: hashFiles('frontend/package.json') != ''
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build
+        working-directory: frontend
+        run: npm run build
+        env:
+          VITE_API_URL: ${{ secrets.API_URL }}
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Sync to S3
+        run: aws s3 sync frontend/dist/ s3://${{ secrets.S3_BUCKET }} --delete
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/*"
