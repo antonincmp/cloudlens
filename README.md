@@ -19,15 +19,15 @@ CloudLens simulates a FinOps dashboard for a fictional company (TechCorp SAS, ~8
 
 ## Stack
 
-| Layer | Technology |
-|---|---|
-| Frontend | React + Tailwind CSS + Recharts |
-| Hosting | S3 + CloudFront (OAC) |
-| Backend | AWS Lambda (Python 3.12) |
-| API | API Gateway REST (with CORS) |
-| Database | DynamoDB (PAY_PER_REQUEST) |
-| IaC | Terraform (modular, remote state on S3) |
-| CI/CD | GitHub Actions — auto-deploy on push to `main` |
+| Layer    | Technology                                     |
+| -------- | ---------------------------------------------- |
+| Frontend | React + Tailwind CSS + Recharts                |
+| Hosting  | S3 + CloudFront (OAC)                          |
+| Backend  | AWS Lambda (Python 3.12)                       |
+| API      | API Gateway REST (with CORS)                   |
+| Database | DynamoDB (PAY_PER_REQUEST)                     |
+| IaC      | Terraform (modular, remote state on S3)        |
+| CI/CD    | GitHub Actions — auto-deploy on push to `main` |
 
 ---
 
@@ -53,13 +53,12 @@ Terraform state is stored in S3 with file locking (`use_lockfile = true`). Infra
 ## Context
 
 This project was built to practice:
+
 - Writing modular Terraform (providers, modules, outputs, remote state)
 - AWS serverless patterns (Lambda + API Gateway + DynamoDB)
 - CloudFront with Origin Access Control (no public S3)
 - IAM least privilege policies
 - CI/CD with GitHub Actions (automated deploy on every push)
-
-All concepts align with the SAA-C03 exam domains: compute, storage, networking, security, and cost optimization.
 
 ---
 
